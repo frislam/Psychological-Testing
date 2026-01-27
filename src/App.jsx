@@ -28,7 +28,7 @@ const App = () => {
   });
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
-  const pdfRef = useRef();
+  const resultRef = useRef();
 
   const trialsPerPhase = 20;
 
@@ -545,7 +545,7 @@ const App = () => {
         )}
 
         {step === 'result' && (
-          <div className="p-8 pb-12 bg-white">
+          <div ref={resultRef} className="p-8 pb-12 bg-white">
             <div className="text-center mb-8">
               <div className="relative inline-block mb-4">
                 <Award size={64} className="text-amber-500" />
