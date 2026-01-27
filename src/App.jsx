@@ -19,7 +19,6 @@ const App = () => {
   const [startTime, setStartTime] = useState(null);
   const [results, setResults] = useState({ congruent: [], incongruent: [] });
   
-  // নতুন স্টেট - পরীক্ষণ পাত্রের তথ্য
   const [participantInfo, setParticipantInfo] = useState({
     name: '',
     age: '',
@@ -28,7 +27,6 @@ const App = () => {
     socioeconomic: ''
   });
   
-  // নতুন স্টেট - মন্তব্য
   const [comment, setComment] = useState('');
   const pdfRef = useRef();
   
@@ -88,7 +86,6 @@ const App = () => {
     }
   };
 
-  // নতুন ফাংশন - পরীক্ষণ পাত্রের তথ্য সাবমিট
   const handleParticipantSubmit = () => {
     if (!participantInfo.name || !participantInfo.age || !participantInfo.gender || !participantInfo.education) {
       alert('অনুগ্রহ করে সকল তথ্য পূরণ করুন');
@@ -138,30 +135,263 @@ const App = () => {
     return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী। অসামঞ্জস্যপূর্ণ তথ্যের মধ্যেও আপনি উচ্চ সঠিকতা বজায় রেখে দ্রুত সিদ্ধান্ত নিতে সক্ষম হয়েছেন।";
   };
 
-  // নতুন ফাংশন - PDF জেনারেট করুন
+  // নতুন PDF জেনারেশন ফাংশন - পরিষ্কার এবং সাদা ব্যাকগ্রাউন্ড সহ
   const generatePDF = () => {
     if (!comment.trim()) {
       alert('অনুগ্রহ করে একটি মন্তব্য যোগ করুন');
       return;
     }
-    const element = pdfRef.current;
+
+    const pdfContent = `
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Stroop Test Report</title>
+          <style>
+            body {
+              font-family: 'Arial', sans-serif;
+              background: white;
+              color: #333;
+              margin: 0;
+              padding: 20px;
+            }
+            .container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 3px solid #4f46e5;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              margin: 0;
+              color: #1f2937;
+              font-size: 28px;
+            }
+            .header p {
+              margin: 5px 0 0 0;
+              color: #6b7280;
+              font-size: 14px;
+            }
+            .section {
+              margin-bottom: 25px;
+            }
+            .section-title {
+              font-size: 16px;
+              font-weight: bold;
+              color: #1f2937;
+              border-bottom: 2px solid #e5e7eb;
+              padding-bottom: 8px;
+              margin-bottom: 15px;
+            }
+            .info-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 15px;
+              margin-bottom: 15px;
+            }
+            .info-item {
+              background: #f9fafb;
+              padding: 12px;
+              border-radius: 6px;
+              border-left: 3px solid #4f46e5;
+            }
+            .info-label {
+              font-size: 12px;
+              color: #6b7280;
+              font-weight: bold;
+              text-transform: uppercase;
+              margin-bottom: 5px;
+            }
+            .info-value {
+              font-size: 14px;
+              color: #1f2937;
+              font-weight: bold;
+            }
+            .stats-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 15px;
+              margin-bottom: 15px;
+            }
+            .stat-box {
+              border: 2px solid #e5e7eb;
+              padding: 15px;
+              border-radius: 8px;
+              text-align: center;
+            }
+            .stat-title {
+              font-size: 12px;
+              color: #6b7280;
+              font-weight: bold;
+              text-transform: uppercase;
+              margin-bottom: 10px;
+            }
+            .stat-number {
+              font-size: 32px;
+              font-weight: bold;
+              color: #4f46e5;
+              margin-bottom: 8px;
+            }
+            .stat-detail {
+              font-size: 12px;
+              color: #6b7280;
+              display: flex;
+              justify-content: space-around;
+            }
+            .interference-box {
+              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+              color: white;
+              padding: 20px;
+              border-radius: 8px;
+              text-align: center;
+              margin-bottom: 15px;
+            }
+            .interference-label {
+              font-size: 12px;
+              opacity: 0.9;
+              margin-bottom: 8px;
+            }
+            .interference-value {
+              font-size: 28px;
+              font-weight: bold;
+            }
+            .analysis-box {
+              background: #f3f4f6;
+              padding: 15px;
+              border-radius: 8px;
+              border-left: 4px solid #4f46e5;
+              line-height: 1.6;
+              font-size: 13px;
+            }
+            .comment-box {
+              background: #fef3c7;
+              padding: 15px;
+              border-radius: 8px;
+              border-left: 4px solid #f59e0b;
+              line-height: 1.6;
+              font-size: 13px;
+            }
+            .comment-title {
+              font-weight: bold;
+              color: #92400e;
+              margin-bottom: 10px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 2px solid #e5e7eb;
+              font-size: 11px;
+              color: #6b7280;
+            }
+            .footer p {
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Stroop Test Report</h1>
+              <p>স্ট্রুপ টেস্ট বিস্তারিত রিপোর্ট</p>
+            </div>
+
+            <div class="section">
+              <div class="section-title">পরীক্ষণ পাত্রের তথ্য</div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">নাম</div>
+                  <div class="info-value">${participantInfo.name}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">বয়স</div>
+                  <div class="info-value">${participantInfo.age} বছর</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">লিঙ্গ</div>
+                  <div class="info-value">${participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">শিক্ষা</div>
+                  <div class="info-value">${participantInfo.education}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">ফলাফল</div>
+              <div class="stats-grid">
+                <div class="stat-box">
+                  <div class="stat-title">ফেজ ১: সাধারণ</div>
+                  <div class="stat-number">${getStats(results.congruent).avg}</div>
+                  <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">মিলিসেকেন্ড</div>
+                  <div class="stat-detail">
+                    <span>সঠিক: ${getStats(results.congruent).correct}</span>
+                    <span>ভুল: ${getStats(results.congruent).incorrect}</span>
+                  </div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-title">ফেজ ২: চ্যালেঞ্জ</div>
+                  <div class="stat-number">${getStats(results.incongruent).avg}</div>
+                  <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">মিলিসেকেন্ড</div>
+                  <div class="stat-detail">
+                    <span>সঠিক: ${getStats(results.incongruent).correct}</span>
+                    <span>ভুল: ${getStats(results.incongruent).incorrect}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="interference-box">
+                <div class="interference-label">STROOP INTERFERENCE SCORE</div>
+                <div class="interference-value">+${getStats(results.incongruent).avg - getStats(results.congruent).avg} ms</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">ফলাফলের বিশ্লেষণ</div>
+              <div class="analysis-box">
+                ${getAnalysis()}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">ব্যবহারকারীর মন্তব্য</div>
+              <div class="comment-box">
+                <div class="comment-title">💬 আপনার মতামত:</div>
+                ${comment}
+              </div>
+            </div>
+
+            <div class="footer">
+              <p><strong>Psychological Assessment Lab</strong></p>
+              <p>Kazi Azimuddin College, Gazipur</p>
+              <p>Report Generated: ${new Date().toLocaleDateString('bn-BD')}</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
     const opt = {
       margin: 10,
       filename: `Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
       jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
-    html2pdf().set(opt).from(element).save();
+
+    html2pdf().set(opt).from(pdfContent).save();
   };
 
   const AnimatedBg = () => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/20 blur-[150px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/20 blur-[150px] rounded-full animate-pulse delay-1000" />
-      <div className="absolute top-[50%] right-[10%] w-[40%] h-[40%] bg-blue-500/15 blur-[120px] rounded-full animate-pulse delay-700" />
-      <div className="grid grid-cols-10 gap-8 opacity-[0.06] p-10 absolute inset-0">
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/10 blur-[150px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 blur-[150px] rounded-full animate-pulse delay-1000" />
+      <div className="grid grid-cols-10 gap-8 opacity-[0.04] p-10">
         {Array.from({ length: 100 }).map((_, i) => (
           <Activity key={i} size={28} className="animate-bounce" style={{ animationDelay: `${i * 0.05}s` }} />
         ))}
@@ -301,7 +531,7 @@ const App = () => {
           </div>
         )}
 
-        {/* Participant Form - নতুন */}
+        {/* Participant Form */}
         {step === 'participant_form' && (
           <div className="p-10 animate-in slide-in-from-right duration-500">
             <div className="flex items-center gap-4 mb-8">
@@ -403,37 +633,6 @@ const App = () => {
               <p className="text-slate-500 mt-1">Thanks For Attend</p>
             </div>
 
-            {/* Participant Info - নতুন */}
-            <div className="bg-cyan-50 p-6 rounded-[2.5rem] border border-cyan-200 mb-6 shadow-sm">
-              <h3 className="font-black text-cyan-900 mb-4 text-lg uppercase tracking-tighter flex items-center gap-2">
-                <Activity size={20} /> পরীক্ষণ পাত্রের তথ্য
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
-                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">নাম</p>
-                  <p className="font-bold text-slate-900">{participantInfo.name}</p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
-                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">বয়স</p>
-                  <p className="font-bold text-slate-900">{participantInfo.age} বছর</p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
-                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">লিঙ্গ</p>
-                  <p className="font-bold text-slate-900">{participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}</p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
-                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">শিক্ষা</p>
-                  <p className="font-bold text-slate-900">{participantInfo.education}</p>
-                </div>
-                {participantInfo.socioeconomic && (
-                  <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm col-span-2 md:col-span-1">
-                    <p className="text-cyan-600 font-bold text-xs uppercase mb-1">অর্থনৈতিক অবস্থা</p>
-                    <p className="font-bold text-slate-900">{participantInfo.socioeconomic}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Score Comparison Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Congruent Results */}
@@ -491,7 +690,7 @@ const App = () => {
               
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
                 <div>
-                  <h5 className="font-bold text-slate-900 mb-2">গবেষণার উদ্দেশ্য</h5>
+                  <h5 className="font-bold text-slate-900 mb-2">গ��েষণার উদ্দেশ্য</h5>
                   <p className="text-xs text-slate-500 leading-relaxed">এই পরীক্ষার মাধ্যমে মানুষের 'অটোমেটিক প্রসেসিং' (শব্দ পড়া) এবং 'কন্ট্রোলড প্রসেসিং' (রং চেনা) এর মধ্যে যে সংঘর্ষ ঘটে, তার তীব্রতা পরিমাপ করা হয়। এটি মনোযোগ ও মানসিক জড়তা পরিমাপের একটি অন্যতম সেরা মাধ্যম।</p>
                 </div>
                 <div>
@@ -501,7 +700,7 @@ const App = () => {
               </section>
             </div>
 
-            {/* Comment Section - নতুন */}
+            {/* Comment Section */}
             <div className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-200 shadow-sm mb-6">
               <h4 className="flex items-center gap-2 text-orange-600 font-black mb-4 text-lg uppercase tracking-tighter">
                 <Send size={20} /> আপনার মন্তব্য
@@ -516,7 +715,7 @@ const App = () => {
               <p className="text-xs text-orange-600 font-medium mt-2">পিডিএফ ডাউনলোড করতে এটি পূরণ করা বাধ্যতামূলক</p>
             </div>
 
-            {/* Action Buttons - আপডেট */}
+            {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               <button 
                 onClick={generatePDF}
