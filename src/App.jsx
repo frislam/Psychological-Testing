@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Play, RotateCcw, Award, BarChart2, Brain, Activity, Target, BookOpen, CheckCircle, XCircle, Download, Send } from 'lucide-react';
-import jsPDF from 'jspdf';
+import React, { useState, useCallback } from 'react';
+import { Play, RotateCcw, Award, Brain, Activity, Target, Download, Send } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 const COLORS = [
   { name: 'লাল', value: '#ef4444' },
@@ -18,7 +18,6 @@ const App = () => {
   const [currentWord, setCurrentWord] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [results, setResults] = useState({ congruent: [], incongruent: [] });
-  
   const [participantInfo, setParticipantInfo] = useState({
     name: '',
     age: '',
@@ -26,9 +25,9 @@ const App = () => {
     education: '',
     socioeconomic: ''
   });
-  
   const [comment, setComment] = useState('');
-  
+  const pdfRef = React.useRef();
+
   const trialsPerPhase = 20;
 
   const generateTrial = useCallback((type) => {
@@ -65,11 +64,9 @@ const App = () => {
     const responseTime = endTime - startTime;
     const isCorrect = selectedColorName === currentWord.correctColor;
 
-    const currentResult = { responseTime, isCorrect };
-    
     setResults(prev => ({
       ...prev,
-      [testType]: [...prev[testType], currentResult]
+      [testType]: [...prev[testType], { responseTime, isCorrect }]
     }));
 
     if (currentTrial + 1 < trialsPerPhase) {
@@ -95,15 +92,13 @@ const App = () => {
 
   const getStats = (data) => {
     const correctOnes = data.filter(d => d.isCorrect);
-    const incorrectOnes = data.filter(d => !d.isCorrect);
-    if (data.length === 0) return { avg: 0, accuracy: 0, correct: 0, incorrect: 0 };
+    if (data.length === 0) return { avg: 0, correct: 0, incorrect: 0 };
     
     const sum = correctOnes.reduce((acc, curr) => acc + curr.responseTime, 0);
     return {
       avg: correctOnes.length > 0 ? Math.round(sum / correctOnes.length) : 0,
-      accuracy: Math.round((correctOnes.length / data.length) * 100),
       correct: correctOnes.length,
-      incorrect: incorrectOnes.length
+      incorrect: data.length - correctOnes.length
     };
   };
 
@@ -119,23 +114,12 @@ const App = () => {
     const iStats = getStats(results.incongruent);
     const diff = iStats.avg - cStats.avg;
 
-    if (iStats.accuracy < 60) {
-      return "আপনার সঠিকতার হার (Accuracy) অনেক কম। এর মানে হলো আপনি অসামঞ্জস্যপূর্ণ তথ্যের চাপে বিভ্রান্ত হয়েছেন অথবা খুব তাড়াহুড়ো করে উত্তর দিয়েছেন।";
-    }
-
     if (diff < 0) {
-      return "অসাধারণ! আপনার ক্ষেত্রে 'নেগেটিভ স্ট্রুপ ইফেক্ট' দেখা গেছে। অর্থাৎ চ্যালেঞ্জিং ধাপে আপনি আরও দ্রুত সিদ্ধান্ত নিয়েছেন। এটি আপনার উচ্চস্তরের অভিযোজন ক্ষমতা (Adaptability) এবং কঠিন পরিস্থিতিতে ব্রেনের দ্রুত সক��রিয় হওয়ার লক্ষণ।";
+      return "অসাধারণ! আপনার ক্ষেত্রে 'নেগেটিভ স্ট্রুপ ইফেক্ট' দেখা গেছে। অর্থাৎ চ্যালেঞ্জিং ধাপে আপনি আরও দ্রুত সিদ্ধান্ত নিয়েছেন। এটি আপনার উচ্চস্তরের অভিযোজন ক্ষমতা (Adaptability) এবং কঠিন পরিস্থিতিতে ব্রেনের দ্রুত সক্রিয় হওয়ার লক্ষণ।";
     }
-
-    if (diff > 500) {
-      return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন।";
-    }
-
-    if (diff > 150) {
-      return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। এটি মানুষের সাধারণ বৈশিষ্ট্য।";
-    }
-
-    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী।";
+    if (diff > 500) return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন, যা নির্দেশ করে যে আপনার ব্রেন শব্দের অর্থ এবং রঙের মধ্যে পার্থক্য করতে লড়াই করেছে।";
+    if (diff > 200) return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। শব্দের অর্থ এবং কালির রঙের অমিল আপনার প্রসেসিং স্পিড কিছুটা কমিয়ে দিয়েছে।";
+    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী। অসামঞ্জস্যপূর্ণ তথ্যের মধ্যেও আপনি খুব দ্রুত সঠিক সিদ্ধান্ত নিতে সক্ষম হয়েছেন।";
   };
 
   const generatePDF = () => {
@@ -143,175 +127,24 @@ const App = () => {
       alert('অনুগ্রহ করে একটি মন্তব্য যোগ করুন');
       return;
     }
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 12;
-    const contentWidth = pageWidth - (margin * 2);
-    let yPosition = margin;
-
-    // ===== হেডার =====
-    pdf.setFillColor(79, 70, 229);
-    pdf.rect(0, 0, pageWidth, 25, 'F');
-    
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(18);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('Stroop Test Report', margin, 10);
-    pdf.setFontSize(9);
-    pdf.setFont(undefined, 'normal');
-    pdf.text('স্ট্রুপ টেস্ট রিপোর্ট', margin, 17);
-
-    yPosition = 32;
-
-    // ===== পরীক্ষণ পাত্রের তথ্য শিরোনাম =====
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('━━━ পরীক্ষণ পাত্রের তথ্য ━━━', margin, yPosition);
-    yPosition += 8;
-
-    // তথ্য বাক্স
-    pdf.setDrawColor(200, 200, 200);
-    pdf.rect(margin, yPosition - 5, contentWidth, 22);
-    
-    pdf.setFontSize(8);
-    pdf.setFont(undefined, 'normal');
-    pdf.setTextColor(55, 65, 81);
-
-    const participantDetails = [
-      `নাম: ${participantInfo.name}`,
-      `বয়স: ${participantInfo.age} বছর`,
-      `লিঙ্গ: ${participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}`,
-      `শিক্ষা: ${participantInfo.education}`,
-      `অর্থনৈতিক অবস্থা: ${participantInfo.socioeconomic || 'নির্ধারিত নয়'}`
-    ];
-
-    participantDetails.forEach((detail, idx) => {
-      pdf.text(detail, margin + 2, yPosition + 2 + (idx * 4.5));
-    });
-
-    yPosition += 26;
-
-    // ===== ফলাফল শিরোনাম =====
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('━━━ পরীক্ষার ফলাফল ━━━', margin, yPosition);
-    yPosition += 8;
-
-    const cStats = getStats(results.congruent);
-    const iStats = getStats(results.incongruent);
-
-    // ফেজ ১ এবং ফেজ ২ ফলাফল
-    pdf.setDrawColor(200, 200, 200);
-    
-    // ফেজ ১
-    pdf.setFillColor(240, 253, 250);
-    pdf.rect(margin, yPosition, contentWidth / 2 - 1, 18, 'FD');
-    pdf.setTextColor(16, 185, 129);
-    pdf.setFontSize(9);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('ফেজ ১: সাধারণ (Congruent)', margin + 2, yPosition + 4);
-    
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(12);
-    pdf.text(`${cStats.avg} ms`, margin + 2, yPosition + 10);
-    
-    pdf.setFontSize(7);
-    pdf.text(`সঠিক: ${cStats.correct} | ভুল: ${cStats.incorrect}`, margin + 2, yPosition + 15);
-
-    // ফেজ ২
-    pdf.setFillColor(254, 242, 242);
-    pdf.rect(margin + contentWidth / 2 + 1, yPosition, contentWidth / 2 - 1, 18, 'FD');
-    pdf.setTextColor(239, 68, 68);
-    pdf.setFontSize(9);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('ফেজ ২: চ্যালেঞ্জ (Incongruent)', margin + contentWidth / 2 + 3, yPosition + 4);
-    
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(12);
-    pdf.text(`${iStats.avg} ms`, margin + contentWidth / 2 + 3, yPosition + 10);
-    
-    pdf.setFontSize(7);
-    pdf.text(`সঠিক: ${iStats.correct} | ভুল: ${iStats.incorrect}`, margin + contentWidth / 2 + 3, yPosition + 15);
-
-    yPosition += 22;
-
-    // স্ট্রুপ ইন্টারফারেন্স স্কোর
-    pdf.setFillColor(79, 70, 229);
-    pdf.rect(margin, yPosition, contentWidth, 10, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont(undefined, 'bold');
-    pdf.setFontSize(9);
-    pdf.text('Stroop Interference Score', margin + 2, yPosition + 3);
-    pdf.setFontSize(10);
-    pdf.text(`+${iStats.avg - cStats.avg} ms`, pageWidth - margin - 20, yPosition + 3);
-
-    yPosition += 14;
-
-    // ===== বিশ্লেষণ =====
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('━━━ ফলাফলের বিশ্লেষণ ━━━', margin, yPosition);
-    yPosition += 6;
-
-    pdf.setFillColor(249, 250, 251);
-    const analysisHeight = 20;
-    pdf.rect(margin, yPosition - 2, contentWidth, analysisHeight, 'F');
-    pdf.setDrawColor(200, 200, 200);
-    pdf.rect(margin, yPosition - 2, contentWidth, analysisHeight);
-
-    pdf.setFontSize(7.5);
-    pdf.setFont(undefined, 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const analysisText = getAnalysis();
-    const splitAnalysis = pdf.splitTextToSize(analysisText, contentWidth - 4);
-    pdf.text(splitAnalysis, margin + 2, yPosition + 1);
-
-    yPosition += analysisHeight + 2;
-
-    // ===== মন্তব্য =====
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('━━━ ব্যবহারকারীর মন্তব্য ━━━', margin, yPosition);
-    yPosition += 6;
-
-    pdf.setFillColor(254, 243, 230);
-    const commentHeight = pageHeight - yPosition - margin - 12;
-    pdf.rect(margin, yPosition - 2, contentWidth, commentHeight, 'F');
-    pdf.setDrawColor(200, 200, 200);
-    pdf.rect(margin, yPosition - 2, contentWidth, commentHeight);
-
-    pdf.setFontSize(7.5);
-    pdf.setFont(undefined, 'normal');
-    pdf.setTextColor(55, 65, 81);
-    const splitComment = pdf.splitTextToSize(comment, contentWidth - 4);
-    pdf.text(splitComment, margin + 2, yPosition + 1);
-
-    // ===== ফুটার =====
-    pdf.setFontSize(6);
-    pdf.setTextColor(107, 114, 128);
-    const footerText = `Psychological Assessment Lab | Kazi Azimuddin College, Gazipur | ${new Date().toLocaleDateString('bn-BD')}`;
-    pdf.text(footerText, pageWidth / 2, pageHeight - 3, { align: 'center' });
-
-    // পিডিএফ সংরক্ষণ করুন
-    pdf.save(`Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`);
+    const element = pdfRef.current;
+    const opt = {
+      margin: 10,
+      filename: `Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    html2pdf().set(opt).from(element).save();
   };
 
   const AnimatedBg = () => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/10 blur-[150px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 blur-[150px] rounded-full animate-pulse delay-1000" />
-      <div className="grid grid-cols-10 gap-8 opacity-[0.04] p-10">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/20 blur-[150px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/20 blur-[150px] rounded-full animate-pulse delay-1000" />
+      <div className="absolute top-[50%] right-[10%] w-[40%] h-[40%] bg-blue-500/15 blur-[120px] rounded-full animate-pulse delay-700" />
+      <div className="grid grid-cols-10 gap-8 opacity-[0.06] p-10 absolute inset-0">
         {Array.from({ length: 100 }).map((_, i) => (
           <Activity key={i} size={28} className="animate-bounce" style={{ animationDelay: `${i * 0.05}s` }} />
         ))}
@@ -320,48 +153,46 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden">
       <AnimatedBg />
 
-      <div className="max-w-2xl w-full bg-white/95 backdrop-blur-2xl rounded-[3rem] shadow-2xl overflow-y-auto max-h-[95vh] relative z-10 border border-white/20 scrollbar-hide">
+      <div className="max-w-2xl w-full bg-white/97 backdrop-blur-2xl rounded-[3rem] shadow-2xl overflow-y-auto max-h-[95vh] relative z-10 border border-white/30">
         
-        {/* Progress Bar */}
-        {step === 'testing' && (
+        {(step === 'testing' || step === 'participant_form') && (
            <div className="h-2 bg-slate-100 w-full sticky top-0 z-20">
               <div 
-                className="h-full bg-indigo-600 transition-all duration-300 shadow-[0_0_10px_rgba(79,70,229,0.5)]" 
-                style={{ width: `${((currentTrial + (testType === 'incongruent' ? trialsPerPhase : 0)) / (trialsPerPhase * 2)) * 100}%` }}
+                className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-300 shadow-[0_0_10px_rgba(79,70,229,0.5)]" 
+                style={{ width: `${step === 'testing' ? ((currentTrial + (testType === 'incongruent' ? trialsPerPhase : 0)) / (trialsPerPhase * 2)) * 100 : 95}%` }}
               />
            </div>
         )}
 
-        {/* Welcome Screen */}
         {step === 'welcome' && (
-          <div className="p-10 text-center animate-in fade-in duration-700">
+          <div className="p-10 text-center">
             <div className="mb-8 relative inline-block">
-              <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-25 animate-pulse" />
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 blur-3xl opacity-40 animate-pulse" />
               <div className="relative bg-white p-6 rounded-[2.5rem] shadow-2xl border border-indigo-50">
                 <Brain size={64} className="text-indigo-600" />
               </div>
             </div>
             
-            <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">Stroop Test <span className="text-indigo-600">Expert</span></h1>
+            <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">Stroop Test <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Expert</span></h1>
             <p className="text-slate-500 mb-8 font-medium italic">মস্তিষ্কের মনোযোগ ও প্রক্রিয়াকরণ ক্ষমতা যাচাই</p>
             
-            <div className="bg-white/50 backdrop-blur rounded-3xl p-6 mb-8 border border-slate-200 text-left shadow-sm">
+            <div className="bg-gradient-to-br from-slate-50 to-slate-100 backdrop-blur rounded-3xl p-6 mb-8 border border-slate-200 text-left shadow-lg">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-xl">MR</div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-xl">MR</div>
                 <div>
                   <p className="text-xl font-bold text-slate-800 leading-none">Muhammad Rakib</p>
-                  <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest mt-2">Lead Researcher</p>
+                  <p className="text-xs bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold uppercase tracking-widest mt-2">Lead Researcher</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm border-t border-slate-100 pt-4 mt-2">
-                <div className="bg-slate-50 p-2 rounded-xl">
+              <div className="grid grid-cols-2 gap-4 text-sm border-t border-slate-200 pt-4 mt-2">
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                   <p className="text-slate-400 text-[10px] uppercase font-bold mb-1">Session</p>
-                  <p className="font-semibold text-slate-700">Psychology 22-23</p>
+                  <p className="font-semibold text-slate-700">Psychology 25-26</p>
                 </div>
-                <div className="bg-slate-50 p-2 rounded-xl">
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                   <p className="text-slate-400 text-[10px] uppercase font-bold mb-1">Institution</p>
                   <p className="font-semibold text-slate-700 leading-tight">Kazi Azimuddin College</p>
                 </div>
@@ -370,16 +201,15 @@ const App = () => {
 
             <button 
               onClick={() => setStep('instruction_congruent')}
-              className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold py-5 rounded-2xl transition-all duration-300 shadow-2xl flex items-center justify-center gap-3 group active:scale-95"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-5 rounded-2xl transition-all duration-300 shadow-2xl flex items-center justify-center gap-3 group active:scale-95"
             >
               পরীক্ষণ শুরু করুন <Play size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         )}
 
-        {/* Instructions */}
         {(step === 'instruction_congruent' || step === 'instruction_incongruent') && (
-          <div className="p-10 animate-in slide-in-from-right duration-500">
+          <div className="p-10">
             <div className="flex items-center gap-5 mb-8">
               <div className={`p-4 rounded-3xl shadow-lg ${step === 'instruction_congruent' ? 'bg-green-100 text-green-600 shadow-green-100' : 'bg-amber-100 text-amber-600 shadow-amber-100'}`}>
                 {step === 'instruction_congruent' ? <Activity size={36} /> : <RotateCcw size={36} />}
@@ -404,14 +234,13 @@ const App = () => {
 
             <button 
               onClick={() => startTest(step === 'instruction_congruent' ? 'congruent' : 'incongruent')}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-95"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-95"
             >
               আমি প্রস্তুত
             </button>
           </div>
         )}
 
-        {/* Testing Phase */}
         {step === 'testing' && (
           <div className="p-10 text-center min-h-[500px] flex flex-col justify-between">
             <div className="flex justify-between items-center">
@@ -429,8 +258,8 @@ const App = () => {
             <div className="py-16">
               {currentWord && (
                 <h1 
-                  className="text-8xl font-black select-none transition-all duration-75 animate-in zoom-in duration-100"
-                  style={{ color: currentWord.color, textShadow: '2px 4px 10px rgba(0,0,0,0.1)' }}
+                  className="text-8xl font-black select-none transition-all duration-75"
+                  style={{ color: currentWord.color, textShadow: '4px 6px 20px rgba(0,0,0,0.2)' }}
                 >
                   {currentWord.text}
                 </h1>
@@ -442,7 +271,7 @@ const App = () => {
                 <button
                   key={color.name}
                   onClick={() => handleResponse(color.name)}
-                  className="bg-white border-2 border-slate-100 hover:border-indigo-500 hover:shadow-xl hover:-translate-y-1 p-5 rounded-2xl font-bold text-lg transition-all active:scale-90"
+                  className="bg-white border-2 border-slate-200 hover:border-indigo-500 hover:shadow-xl hover:-translate-y-1 p-5 rounded-2xl font-bold text-lg transition-all active:scale-90 shadow-sm"
                 >
                   {color.name}
                 </button>
@@ -451,15 +280,14 @@ const App = () => {
           </div>
         )}
 
-        {/* Participant Form */}
         {step === 'participant_form' && (
-          <div className="p-10 animate-in slide-in-from-right duration-500">
+          <div className="p-10">
             <div className="flex items-center gap-4 mb-8">
               <div className="p-4 rounded-3xl bg-cyan-100 text-cyan-600 shadow-lg">
                 <Brain size={36} />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">পরীক্ষণ পাত্রের ���থ্য</h2>
+                <h2 className="text-2xl font-black text-slate-900">পরীক্ষণ পাত্রের তথ্য</h2>
                 <p className="text-slate-500 font-medium">আপনার ব্যক্তিগত তথ্য প্রদান করুন</p>
               </div>
             </div>
@@ -496,7 +324,7 @@ const App = () => {
                   >
                     <option value="">নির্বাচন করুন</option>
                     <option value="male">পুরুষ</option>
-                    <option value="female">নারী</option>
+                    <option value="female">���ারী</option>
                     <option value="other">অন্যান্য</option>
                   </select>
                 </div>
@@ -534,16 +362,15 @@ const App = () => {
 
             <button 
               onClick={handleParticipantSubmit}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-95"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-95"
             >
               পরবর্তী পদক্ষেপ
             </button>
           </div>
         )}
 
-        {/* Comprehensive Result Dashboard */}
         {step === 'result' && (
-          <div className="p-8 animate-in fade-in duration-1000 pb-12">
+          <div ref={pdfRef} className="p-8 pb-12">
             <div className="text-center mb-8">
               <div className="relative inline-block mb-4">
                 <Award size={64} className="text-amber-500 animate-bounce" />
@@ -553,9 +380,37 @@ const App = () => {
               <p className="text-slate-500 mt-1">Thanks For Attend</p>
             </div>
 
-            {/* Score Comparison Grid */}
+            <div className="bg-cyan-50 p-6 rounded-[2.5rem] border border-cyan-200 mb-6 shadow-sm">
+              <h3 className="font-black text-cyan-900 mb-4 text-lg uppercase tracking-tighter flex items-center gap-2">
+                <Activity size={20} /> পরীক্ষণ পাত্রের তথ্য
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
+                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">নাম</p>
+                  <p className="font-bold text-slate-900">{participantInfo.name}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
+                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">বয়স</p>
+                  <p className="font-bold text-slate-900">{participantInfo.age} বছর</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
+                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">লিঙ্গ</p>
+                  <p className="font-bold text-slate-900">{participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm">
+                  <p className="text-cyan-600 font-bold text-xs uppercase mb-1">শিক্ষা</p>
+                  <p className="font-bold text-slate-900">{participantInfo.education}</p>
+                </div>
+                {participantInfo.socioeconomic && (
+                  <div className="bg-white p-4 rounded-2xl border border-cyan-100 shadow-sm col-span-2 md:col-span-1">
+                    <p className="text-cyan-600 font-bold text-xs uppercase mb-1">অর্থনৈতিক অবস্থা</p>
+                    <p className="font-bold text-slate-900">{participantInfo.socioeconomic}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Congruent Results */}
               <div className="bg-emerald-50/50 p-6 rounded-[2.5rem] border border-emerald-100">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Phase 1: Basic</span>
@@ -566,12 +421,11 @@ const App = () => {
                   <span className="text-emerald-600 font-bold">ms</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold text-emerald-700 border-t border-emerald-100 pt-3">
-                  <div className="flex items-center gap-1"><CheckCircle size={12} /> সঠিক: {getStats(results.congruent).correct}</div>
-                  <div className="flex items-center gap-1"><XCircle size={12} /> ভুল: {getStats(results.congruent).incorrect}</div>
+                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.congruent).correct}</div>
+                  <div className="flex items-center gap-1">✗ ভুল: {getStats(results.congruent).incorrect}</div>
                 </div>
               </div>
 
-              {/* Incongruent Results */}
               <div className="bg-rose-50/50 p-6 rounded-[2.5rem] border border-rose-100">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-xs font-black text-rose-600 uppercase tracking-widest">Phase 2: Challenge</span>
@@ -582,26 +436,24 @@ const App = () => {
                   <span className="text-rose-600 font-bold">ms</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold text-rose-700 border-t border-rose-100 pt-3">
-                  <div className="flex items-center gap-1"><CheckCircle size={12} /> সঠিক: {getStats(results.incongruent).correct}</div>
-                  <div className="flex items-center gap-1"><XCircle size={12} /> ভুল: {getStats(results.incongruent).incorrect}</div>
+                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.incongruent).correct}</div>
+                  <div className="flex items-center gap-1">✗ ভুল: {getStats(results.incongruent).incorrect}</div>
                 </div>
               </div>
             </div>
 
-            {/* Interference Score */}
-            <div className="bg-indigo-600 rounded-[2rem] p-6 text-white mb-6 shadow-xl shadow-indigo-100 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[2rem] p-6 text-white mb-6 shadow-xl shadow-indigo-100 flex items-center justify-between">
               <div>
                 <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest">Stroop Interference Score</p>
                 <h3 className="text-3xl font-black">+{getStats(results.incongruent).avg - getStats(results.congruent).avg} ms</h3>
               </div>
-              <BarChart2 size={40} className="opacity-40" />
+              <div className="opacity-40">📊</div>
             </div>
 
-            {/* Analysis & Context */}
             <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-8 mb-6">
               <section>
                 <h4 className="flex items-center gap-2 text-indigo-600 font-black mb-3 text-lg uppercase tracking-tighter">
-                  <BookOpen size={20} /> ফলাফলের বিশ্লেষণ (Analysis)
+                  📖 ফলাফলের বিশ্লেষণ
                 </h4>
                 <div className="bg-slate-50 p-5 rounded-3xl text-slate-700 leading-relaxed italic border-l-4 border-indigo-400">
                   {getAnalysis()}
@@ -620,8 +472,7 @@ const App = () => {
               </section>
             </div>
 
-            {/* Comment Section */}
-            <div className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-200 shadow-sm mb-6">
+            <div className="bg-orange-50 rounded-[2.5rem] p-8 border border-orange-200 shadow-sm mb-6">
               <h4 className="flex items-center gap-2 text-orange-600 font-black mb-4 text-lg uppercase tracking-tighter">
                 <Send size={20} /> আপনার মন্তব্য
               </h4>
@@ -635,17 +486,16 @@ const App = () => {
               <p className="text-xs text-orange-600 font-medium mt-2">পিডিএফ ডাউনলোড করতে এটি পূরণ করা বাধ্যতামূলক</p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button 
                 onClick={generatePDF}
-                className="py-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group shadow-lg active:scale-95"
+                className="py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group shadow-lg active:scale-95"
               >
                 <Download size={20} className="group-hover:scale-110 transition-transform" /> PDF ডাউনলোড করুন
               </button>
               <button 
                 onClick={resetTest}
-                className="py-5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group"
+                className="py-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group shadow-md active:scale-95"
               >
                 <RotateCcw size={18} className="group-hover:rotate-180 transition-transform duration-500" /> নতুন সেশন শুরু করুন
               </button>
@@ -653,7 +503,7 @@ const App = () => {
             
             <footer className="mt-12 text-center">
               <p className="text-[10px] text-slate-400 font-black tracking-[0.4em] uppercase mb-1">Psychological Assessment Lab</p>
-              <p className="text-[9px] text-slate-300 font-medium">Kazi Azimuddin College, Gazipur</p>
+              <p className="text-[9px] text-slate-400 font-medium">Kazi Azimuddin College, Gazipur | {new Date().toLocaleDateString('bn-BD')}</p>
             </footer>
           </div>
         )}
