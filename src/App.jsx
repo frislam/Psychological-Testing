@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Play, RotateCcw, Award, Brain, Activity, Target, Download, Send } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
@@ -26,11 +26,11 @@ const App = () => {
     socioeconomic: ''
   });
   const [comment, setComment] = useState('');
-  const pdfRef = React.useRef();
+  const pdfRef = useRef();
 
   const trialsPerPhase = 20;
 
-  const generateTrial = React.useCallback((type) => {
+  const generateTrial = useCallback((type) => {
     const colorIdx = Math.floor(Math.random() * COLORS.length);
     let textIdx;
     
@@ -415,7 +415,7 @@ const App = () => {
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="পরীক্ষা সম্পর্কে আপনার মন্তব্য..."
+                placeholder="পরীক্ষা সম��পর্কে আপনার মন্তব্য..."
                 rows="5"
                 className="w-full px-4 py-3 rounded-2xl border-2 border-orange-200 focus:border-orange-400 outline-none resize-none"
               />
