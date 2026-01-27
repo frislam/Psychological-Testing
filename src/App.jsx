@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Play, RotateCcw, Award, Brain, Activity, Target, Download, Send } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -118,6 +118,7 @@ const App = () => {
     setCurrentTrial(0);
     setParticipantInfo({ name: '', age: '', gender: '', education: '', socioeconomic: '' });
     setComment('');
+    setLoading(false);
   };
 
   const getAnalysis = () => {
@@ -173,6 +174,7 @@ const App = () => {
       return (completedTrials / totalTrials) * 100;
     }
     if (step === 'participant_form') return 75;
+    if (step === 'result') return 100;
     return 0;
   };
 
