@@ -28,7 +28,6 @@ const App = () => {
   });
   
   const [comment, setComment] = useState('');
-  const pdfRef = useRef();
   
   const trialsPerPhase = 20;
 
@@ -125,7 +124,7 @@ const App = () => {
     }
 
     if (diff < 0) {
-      return "অসাধারণ! আপনার ক্ষেত্রে 'নেগেটিভ স্ট্রুপ ইফেক্ট' দেখা গেছে। অর্থাৎ চ্যালেঞ্জিং ধাপে আপনি আরও দ্রুত সিদ্ধান্ত নিয়েছেন। এটি আপনার উচ্চস্তরের অভিযোজন ক্ষমতা (Adaptability) এবং কঠিন পরিস্থিতিতে ব্রেনের দ্রুত সক্রিয় হওয়ার লক্ষণ।";
+      return "অসাধারণ! আপনার ক্ষেত্রে 'নেগেটিভ স্ট্রুপ ইফেক্ট' দেখা গেছে। অর্থাৎ চ্যালেঞ্জিং ধাপে আপনি আরও দ্রুত সিদ্ধান্ত নিয়েছেন। এটি আপনার উচ্চস্তরের অভিযোজন ক্ষমতা (Adaptability) এবং কঠিন পরিস্থিতিতে ব্রেনের দ্রুত সক��রিয় হওয়ার লক্ষণ।";
     }
 
     if (diff > 500) {
@@ -139,7 +138,6 @@ const App = () => {
     return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী।";
   };
 
-  // নতুন সহজ PDF জেনারেশন ফাংশন
   const generatePDF = () => {
     if (!comment.trim()) {
       alert('অনুগ্রহ করে একটি মন্তব্য যোগ করুন');
@@ -152,160 +150,158 @@ const App = () => {
       format: 'a4'
     });
 
-    let yPosition = 15;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 12;
     const contentWidth = pageWidth - (margin * 2);
+    let yPosition = margin;
 
     // ===== হেডার =====
-    pdf.setFillColor(79, 70, 229); // Indigo
-    pdf.rect(0, 0, pageWidth, 30, 'F');
+    pdf.setFillColor(79, 70, 229);
+    pdf.rect(0, 0, pageWidth, 25, 'F');
     
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(20);
+    pdf.setFontSize(18);
     pdf.setFont(undefined, 'bold');
-    pdf.text('Stroop Test Report', margin, 12);
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'normal');
-    pdf.text('স্ট্রুপ টেস্ট রিপোর্ট', margin, 22);
-
-    yPosition = 40;
-
-    // ===== পরীক্ষণ পাত্রের তথ্য =====
-    pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(11);
-    pdf.setFont(undefined, 'bold');
-    pdf.text('পরীক্ষণ পাত্রের তথ্য', margin, yPosition);
-    yPosition += 7;
-
+    pdf.text('Stroop Test Report', margin, 10);
     pdf.setFontSize(9);
     pdf.setFont(undefined, 'normal');
+    pdf.text('স্ট্রুপ টেস্ট রিপোর্ট', margin, 17);
+
+    yPosition = 32;
+
+    // ===== পরীক্ষণ পাত্রের তথ্য শিরোনাম =====
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('━━━ পরীক্ষণ পাত্রের তথ্য ━━━', margin, yPosition);
+    yPosition += 8;
+
+    // তথ্য বাক্স
+    pdf.setDrawColor(200, 200, 200);
+    pdf.rect(margin, yPosition - 5, contentWidth, 22);
     
+    pdf.setFontSize(8);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(55, 65, 81);
+
     const participantDetails = [
-      { label: 'নাম:', value: participantInfo.name },
-      { label: 'বয়স:', value: `${participantInfo.age} বছর` },
-      { label: 'লিঙ্গ:', value: participantInfo.gender === 'male' ? 'পুরুষ' : 'নারী' },
-      { label: 'শিক্ষা:', value: participantInfo.education }
+      `নাম: ${participantInfo.name}`,
+      `বয়স: ${participantInfo.age} বছর`,
+      `লিঙ্গ: ${participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}`,
+      `শিক্ষা: ${participantInfo.education}`,
+      `অর্থনৈতিক অবস্থা: ${participantInfo.socioeconomic || 'নির্ধারিত নয়'}`
     ];
 
-    const colWidth = contentWidth / 2;
-    let col = 0;
-    let tempY = yPosition;
-
     participantDetails.forEach((detail, idx) => {
-      if (col === 0) tempY = yPosition + (Math.floor(idx / 2) * 8);
-      const xPos = margin + (col * colWidth);
-      
-      pdf.setFont(undefined, 'bold');
-      pdf.setTextColor(79, 70, 229);
-      pdf.text(detail.label, xPos, tempY);
-      
-      pdf.setFont(undefined, 'normal');
-      pdf.setTextColor(55, 65, 81);
-      pdf.text(detail.value, xPos + 20, tempY);
-      
-      col = (col + 1) % 2;
+      pdf.text(detail, margin + 2, yPosition + 2 + (idx * 4.5));
     });
 
-    yPosition += 18;
+    yPosition += 26;
 
-    // ===== ফলাফল বিভাগ =====
+    // ===== ফলাফল শিরোনাম =====
     pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
-    pdf.text('পরীক্ষার ফলাফল', margin, yPosition);
-    yPosition += 7;
+    pdf.text('━━━ পরীক্ষার ফলাফল ━━━', margin, yPosition);
+    yPosition += 8;
 
     const cStats = getStats(results.congruent);
     const iStats = getStats(results.incongruent);
 
+    // ফেজ ১ এবং ফেজ ২ ফলাফল
+    pdf.setDrawColor(200, 200, 200);
+    
     // ফেজ ১
-    pdf.setFillColor(240, 253, 250); // Light teal
-    pdf.rect(margin, yPosition - 3, colWidth - 2, 20, 'F');
-    
-    pdf.setFont(undefined, 'bold');
-    pdf.setFontSize(8);
+    pdf.setFillColor(240, 253, 250);
+    pdf.rect(margin, yPosition, contentWidth / 2 - 1, 18, 'FD');
     pdf.setTextColor(16, 185, 129);
-    pdf.text('ফেজ ১: সাধারণ', margin + 3, yPosition);
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('ফেজ ১: সাধারণ (Congruent)', margin + 2, yPosition + 4);
     
-    pdf.setFontSize(14);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(`${cStats.avg}ms`, margin + 3, yPosition + 8);
+    pdf.setFontSize(12);
+    pdf.text(`${cStats.avg} ms`, margin + 2, yPosition + 10);
     
     pdf.setFontSize(7);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text(`সঠিক: ${cStats.correct} | ভুল: ${cStats.incorrect}`, margin + 3, yPosition + 15);
+    pdf.text(`সঠিক: ${cStats.correct} | ভুল: ${cStats.incorrect}`, margin + 2, yPosition + 15);
 
     // ফেজ ২
-    pdf.setFillColor(254, 242, 242); // Light red
-    pdf.rect(margin + colWidth, yPosition - 3, colWidth - 2, 20, 'F');
-    
-    pdf.setFont(undefined, 'bold');
-    pdf.setFontSize(8);
+    pdf.setFillColor(254, 242, 242);
+    pdf.rect(margin + contentWidth / 2 + 1, yPosition, contentWidth / 2 - 1, 18, 'FD');
     pdf.setTextColor(239, 68, 68);
-    pdf.text('ফেজ ২: চ্যালেঞ্জ', margin + colWidth + 3, yPosition);
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('ফেজ ২: চ্যালেঞ্জ (Incongruent)', margin + contentWidth / 2 + 3, yPosition + 4);
     
-    pdf.setFontSize(14);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(`${iStats.avg}ms`, margin + colWidth + 3, yPosition + 8);
+    pdf.setFontSize(12);
+    pdf.text(`${iStats.avg} ms`, margin + contentWidth / 2 + 3, yPosition + 10);
     
     pdf.setFontSize(7);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text(`সঠিক: ${iStats.correct} | ভুল: ${iStats.incorrect}`, margin + colWidth + 3, yPosition + 15);
+    pdf.text(`সঠিক: ${iStats.correct} | ভুল: ${iStats.incorrect}`, margin + contentWidth / 2 + 3, yPosition + 15);
 
-    yPosition += 25;
+    yPosition += 22;
 
     // স্ট্রুপ ইন্টারফারেন্স স্কোর
     pdf.setFillColor(79, 70, 229);
-    pdf.rect(margin, yPosition - 3, contentWidth, 12, 'F');
-    
+    pdf.rect(margin, yPosition, contentWidth, 10, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont(undefined, 'bold');
     pdf.setFontSize(9);
-    pdf.text('Stroop Interference Score', margin + 3, yPosition + 2);
-    
-    pdf.setFontSize(11);
-    pdf.text(`+${iStats.avg - cStats.avg} ms`, pageWidth - margin - 20, yPosition + 2);
+    pdf.text('Stroop Interference Score', margin + 2, yPosition + 3);
+    pdf.setFontSize(10);
+    pdf.text(`+${iStats.avg - cStats.avg} ms`, pageWidth - margin - 20, yPosition + 3);
 
-    yPosition += 18;
+    yPosition += 14;
 
     // ===== বিশ্লেষণ =====
     pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
-    pdf.text('বিশ্লেষণ', margin, yPosition);
+    pdf.text('━━━ ফলাফলের বিশ্লেষণ ━━━', margin, yPosition);
     yPosition += 6;
 
-    pdf.setFontSize(8);
+    pdf.setFillColor(249, 250, 251);
+    const analysisHeight = 20;
+    pdf.rect(margin, yPosition - 2, contentWidth, analysisHeight, 'F');
+    pdf.setDrawColor(200, 200, 200);
+    pdf.rect(margin, yPosition - 2, contentWidth, analysisHeight);
+
+    pdf.setFontSize(7.5);
     pdf.setFont(undefined, 'normal');
-    const analysisText = getAnalysis();
-    const splitAnalysis = pdf.splitTextToSize(analysisText, contentWidth);
-    
     pdf.setTextColor(55, 65, 81);
-    pdf.text(splitAnalysis, margin, yPosition);
-    yPosition += (splitAnalysis.length * 5) + 5;
+    const analysisText = getAnalysis();
+    const splitAnalysis = pdf.splitTextToSize(analysisText, contentWidth - 4);
+    pdf.text(splitAnalysis, margin + 2, yPosition + 1);
+
+    yPosition += analysisHeight + 2;
 
     // ===== মন্তব্য =====
     pdf.setTextColor(31, 41, 55);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
-    pdf.text('ব্যবহারকারীর মন্তব্য', margin, yPosition);
+    pdf.text('━━━ ব্যবহারকারীর মন্তব্য ━━━', margin, yPosition);
     yPosition += 6;
 
     pdf.setFillColor(254, 243, 230);
-    pdf.rect(margin, yPosition - 3, contentWidth, pageHeight - yPosition - 15, 'F');
+    const commentHeight = pageHeight - yPosition - margin - 12;
+    pdf.rect(margin, yPosition - 2, contentWidth, commentHeight, 'F');
+    pdf.setDrawColor(200, 200, 200);
+    pdf.rect(margin, yPosition - 2, contentWidth, commentHeight);
 
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setFont(undefined, 'normal');
     pdf.setTextColor(55, 65, 81);
     const splitComment = pdf.splitTextToSize(comment, contentWidth - 4);
-    pdf.text(splitComment, margin + 2, yPosition + 2);
+    pdf.text(splitComment, margin + 2, yPosition + 1);
 
     // ===== ফুটার =====
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Psychological Assessment Lab | Kazi Azimuddin College', pageWidth / 2, pageHeight - 5, { align: 'center' });
+    const footerText = `Psychological Assessment Lab | Kazi Azimuddin College, Gazipur | ${new Date().toLocaleDateString('bn-BD')}`;
+    pdf.text(footerText, pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // পিডিএফ সংরক্ষণ করুন
     pdf.save(`Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`);
@@ -463,7 +459,7 @@ const App = () => {
                 <Brain size={36} />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">পরীক্ষণ পাত্রের তথ্য</h2>
+                <h2 className="text-2xl font-black text-slate-900">পরীক্ষণ পাত্রের ���থ্য</h2>
                 <p className="text-slate-500 font-medium">আপনার ব্যক্তিগত তথ্য প্রদান করুন</p>
               </div>
             </div>
@@ -547,7 +543,7 @@ const App = () => {
 
         {/* Comprehensive Result Dashboard */}
         {step === 'result' && (
-          <div ref={pdfRef} className="p-8 animate-in fade-in duration-1000 pb-12">
+          <div className="p-8 animate-in fade-in duration-1000 pb-12">
             <div className="text-center mb-8">
               <div className="relative inline-block mb-4">
                 <Award size={64} className="text-amber-500 animate-bounce" />
