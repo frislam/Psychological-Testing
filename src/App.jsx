@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Play, RotateCcw, Award, Clock, BarChart2, Brain, Activity, Target, BookOpen, CheckCircle, XCircle, Download, Send } from 'lucide-react';
+import { Play, RotateCcw, Award, BarChart2, Brain, Activity, Target, BookOpen, CheckCircle, XCircle, Download, Send } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
 const COLORS = [
