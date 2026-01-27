@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Play, RotateCcw, Award, BarChart2, Brain, Activity, Target, BookOpen, CheckCircle, XCircle, Download, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, RotateCcw, Award, Brain, Activity, Target, Download, Send } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
 const COLORS = [
@@ -26,11 +26,11 @@ const App = () => {
     socioeconomic: ''
   });
   const [comment, setComment] = useState('');
-  const pdfRef = useRef();
+  const pdfRef = React.useRef();
 
   const trialsPerPhase = 20;
 
-  const generateTrial = useCallback((type) => {
+  const generateTrial = React.useCallback((type) => {
     const colorIdx = Math.floor(Math.random() * COLORS.length);
     let textIdx;
     
@@ -92,12 +92,11 @@ const App = () => {
 
   const getStats = (data) => {
     const correctOnes = data.filter(d => d.isCorrect);
-    if (data.length === 0) return { avg: 0, accuracy: 0, correct: 0, incorrect: 0 };
+    if (data.length === 0) return { avg: 0, correct: 0, incorrect: 0 };
     
     const sum = correctOnes.reduce((acc, curr) => acc + curr.responseTime, 0);
     return {
       avg: correctOnes.length > 0 ? Math.round(sum / correctOnes.length) : 0,
-      accuracy: Math.round((correctOnes.length / data.length) * 100),
       correct: correctOnes.length,
       incorrect: data.length - correctOnes.length
     };
@@ -115,8 +114,8 @@ const App = () => {
     const iStats = getStats(results.incongruent);
     const diff = iStats.avg - cStats.avg;
 
-    if (diff > 500) return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন।";
-    if (diff > 200) return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। শব্দের অর্থ এবং কালির রঙের অমিল আপনার প্রসেসিং স্পিড কমিয়েছে।";
+    if (diff > 500) return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট।";
+    if (diff > 200) return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে।";
     return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী।";
   };
 
@@ -141,7 +140,6 @@ const App = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/20 blur-[150px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/20 blur-[150px] rounded-full animate-pulse delay-1000" />
-      <div className="absolute top-[50%] right-[10%] w-[40%] h-[40%] bg-blue-500/15 blur-[120px] rounded-full animate-pulse delay-700" />
       <div className="grid grid-cols-10 gap-8 opacity-[0.06] p-10 absolute inset-0">
         {Array.from({ length: 100 }).map((_, i) => (
           <Activity key={i} size={28} className="animate-bounce" style={{ animationDelay: `${i * 0.05}s` }} />
