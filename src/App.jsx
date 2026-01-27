@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Play, RotateCcw, Award, BarChart2, Brain, Activity, Target, BookOpen, CheckCircle, XCircle, Download, Send } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
+import jsPDF from 'jspdf';
 
 const COLORS = [
   { name: 'লাল', value: '#ef4444' },
@@ -121,270 +121,190 @@ const App = () => {
     const diff = iStats.avg - cStats.avg;
 
     if (iStats.accuracy < 60) {
-      return "আপনার সঠিকতার হার (Accuracy) অনেক কম। এর মানে হলো আপনি অসামঞ্জস্যপূর্ণ তথ্যের চাপে বিভ্রান্ত হয়েছেন অথবা খুব তাড়াহুড়ো করে উত্তর দিয়েছেন। প্রকৃত কগনিটিভ কন্ট্রোল যাচাইয়ের জন্য আপনাকে মনোযোগ দিয়ে সঠিক উত্তর দিতে হবে।";
+      return "আপনার সঠিকতার হার (Accuracy) অনেক কম। এর মানে হলো আপনি অসামঞ্জস্যপূর্ণ তথ্যের চাপে বিভ্রান্ত হয়েছেন অথবা খুব তাড়াহুড়ো করে উত্তর দিয়েছেন।";
     }
 
     if (diff > 500) {
-      return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন, যা নির্দেশ করে যে আপনার ব্রেন শব্দের অর্থ এবং রঙের মধ্যে পার্থক্য করতে বেশ লড়াই করেছে।";
+      return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন।";
     }
 
     if (diff > 150) {
-      return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। শব্দের অর্থ এবং কালির রঙের অমিল আপনার প্রসেসিং স্পিড কিছুটা কমিয়ে দিয়েছে, যা মানুষের সাধারণ বৈশিষ্ট্য।";
+      return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। এটি মানুষের সাধারণ বৈশিষ্ট্য।";
     }
 
-    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী। অসামঞ্জস্যপূর্ণ তথ্যের মধ্যেও আপনি উচ্চ সঠিকতা বজায় রেখে দ্রুত সিদ্ধান্ত নিতে সক্ষম হয়েছেন।";
+    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী।";
   };
 
-  // নতুন PDF জেনারেশন ফাংশন - পরিষ্কার এবং সাদা ব্যাকগ্রাউন্ড সহ
+  // নতুন সহজ PDF জেনারেশন ফাংশন
   const generatePDF = () => {
     if (!comment.trim()) {
       alert('অনুগ্রহ করে একটি মন্তব্য যোগ করুন');
       return;
     }
 
-    const pdfContent = `
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Stroop Test Report</title>
-          <style>
-            body {
-              font-family: 'Arial', sans-serif;
-              background: white;
-              color: #333;
-              margin: 0;
-              padding: 20px;
-            }
-            .container {
-              max-width: 800px;
-              margin: 0 auto;
-              background: white;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 3px solid #4f46e5;
-              padding-bottom: 20px;
-            }
-            .header h1 {
-              margin: 0;
-              color: #1f2937;
-              font-size: 28px;
-            }
-            .header p {
-              margin: 5px 0 0 0;
-              color: #6b7280;
-              font-size: 14px;
-            }
-            .section {
-              margin-bottom: 25px;
-            }
-            .section-title {
-              font-size: 16px;
-              font-weight: bold;
-              color: #1f2937;
-              border-bottom: 2px solid #e5e7eb;
-              padding-bottom: 8px;
-              margin-bottom: 15px;
-            }
-            .info-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 15px;
-              margin-bottom: 15px;
-            }
-            .info-item {
-              background: #f9fafb;
-              padding: 12px;
-              border-radius: 6px;
-              border-left: 3px solid #4f46e5;
-            }
-            .info-label {
-              font-size: 12px;
-              color: #6b7280;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin-bottom: 5px;
-            }
-            .info-value {
-              font-size: 14px;
-              color: #1f2937;
-              font-weight: bold;
-            }
-            .stats-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 15px;
-              margin-bottom: 15px;
-            }
-            .stat-box {
-              border: 2px solid #e5e7eb;
-              padding: 15px;
-              border-radius: 8px;
-              text-align: center;
-            }
-            .stat-title {
-              font-size: 12px;
-              color: #6b7280;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin-bottom: 10px;
-            }
-            .stat-number {
-              font-size: 32px;
-              font-weight: bold;
-              color: #4f46e5;
-              margin-bottom: 8px;
-            }
-            .stat-detail {
-              font-size: 12px;
-              color: #6b7280;
-              display: flex;
-              justify-content: space-around;
-            }
-            .interference-box {
-              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-              color: white;
-              padding: 20px;
-              border-radius: 8px;
-              text-align: center;
-              margin-bottom: 15px;
-            }
-            .interference-label {
-              font-size: 12px;
-              opacity: 0.9;
-              margin-bottom: 8px;
-            }
-            .interference-value {
-              font-size: 28px;
-              font-weight: bold;
-            }
-            .analysis-box {
-              background: #f3f4f6;
-              padding: 15px;
-              border-radius: 8px;
-              border-left: 4px solid #4f46e5;
-              line-height: 1.6;
-              font-size: 13px;
-            }
-            .comment-box {
-              background: #fef3c7;
-              padding: 15px;
-              border-radius: 8px;
-              border-left: 4px solid #f59e0b;
-              line-height: 1.6;
-              font-size: 13px;
-            }
-            .comment-title {
-              font-weight: bold;
-              color: #92400e;
-              margin-bottom: 10px;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 30px;
-              padding-top: 15px;
-              border-top: 2px solid #e5e7eb;
-              font-size: 11px;
-              color: #6b7280;
-            }
-            .footer p {
-              margin: 5px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Stroop Test Report</h1>
-              <p>স্ট্রুপ টেস্ট বিস্তারিত রিপোর্ট</p>
-            </div>
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-            <div class="section">
-              <div class="section-title">পরীক্ষণ পাত্রের তথ্য</div>
-              <div class="info-grid">
-                <div class="info-item">
-                  <div class="info-label">নাম</div>
-                  <div class="info-value">${participantInfo.name}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">বয়স</div>
-                  <div class="info-value">${participantInfo.age} বছর</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">লিঙ্গ</div>
-                  <div class="info-value">${participantInfo.gender === 'male' ? 'পুরুষ' : participantInfo.gender === 'female' ? 'নারী' : 'অন্যান্য'}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">শিক্ষা</div>
-                  <div class="info-value">${participantInfo.education}</div>
-                </div>
-              </div>
-            </div>
+    let yPosition = 15;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
 
-            <div class="section">
-              <div class="section-title">ফলাফল</div>
-              <div class="stats-grid">
-                <div class="stat-box">
-                  <div class="stat-title">ফেজ ১: সাধারণ</div>
-                  <div class="stat-number">${getStats(results.congruent).avg}</div>
-                  <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">মিলিসেকেন্ড</div>
-                  <div class="stat-detail">
-                    <span>সঠিক: ${getStats(results.congruent).correct}</span>
-                    <span>ভুল: ${getStats(results.congruent).incorrect}</span>
-                  </div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-title">ফেজ ২: চ্যালেঞ্জ</div>
-                  <div class="stat-number">${getStats(results.incongruent).avg}</div>
-                  <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">মিলিসেকেন্ড</div>
-                  <div class="stat-detail">
-                    <span>সঠিক: ${getStats(results.incongruent).correct}</span>
-                    <span>ভুল: ${getStats(results.incongruent).incorrect}</span>
-                  </div>
-                </div>
-              </div>
+    // ===== হেডার =====
+    pdf.setFillColor(79, 70, 229); // Indigo
+    pdf.rect(0, 0, pageWidth, 30, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(20);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Stroop Test Report', margin, 12);
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+    pdf.text('স্ট্রুপ টেস্ট রিপোর্ট', margin, 22);
 
-              <div class="interference-box">
-                <div class="interference-label">STROOP INTERFERENCE SCORE</div>
-                <div class="interference-value">+${getStats(results.incongruent).avg - getStats(results.congruent).avg} ms</div>
-              </div>
-            </div>
+    yPosition = 40;
 
-            <div class="section">
-              <div class="section-title">ফলাফলের বিশ্লেষণ</div>
-              <div class="analysis-box">
-                ${getAnalysis()}
-              </div>
-            </div>
+    // ===== পরীক্ষণ পাত্রের তথ্য =====
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('পরীক্ষণ পাত্রের তথ্য', margin, yPosition);
+    yPosition += 7;
 
-            <div class="section">
-              <div class="section-title">ব্যবহারকারীর মন্তব্য</div>
-              <div class="comment-box">
-                <div class="comment-title">💬 আপনার মতামত:</div>
-                ${comment}
-              </div>
-            </div>
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'normal');
+    
+    const participantDetails = [
+      { label: 'নাম:', value: participantInfo.name },
+      { label: 'বয়স:', value: `${participantInfo.age} বছর` },
+      { label: 'লিঙ্গ:', value: participantInfo.gender === 'male' ? 'পুরুষ' : 'নারী' },
+      { label: 'শিক্ষা:', value: participantInfo.education }
+    ];
 
-            <div class="footer">
-              <p><strong>Psychological Assessment Lab</strong></p>
-              <p>Kazi Azimuddin College, Gazipur</p>
-              <p>Report Generated: ${new Date().toLocaleDateString('bn-BD')}</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const colWidth = contentWidth / 2;
+    let col = 0;
+    let tempY = yPosition;
 
-    const opt = {
-      margin: 10,
-      filename: `Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-    };
+    participantDetails.forEach((detail, idx) => {
+      if (col === 0) tempY = yPosition + (Math.floor(idx / 2) * 8);
+      const xPos = margin + (col * colWidth);
+      
+      pdf.setFont(undefined, 'bold');
+      pdf.setTextColor(79, 70, 229);
+      pdf.text(detail.label, xPos, tempY);
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(detail.value, xPos + 20, tempY);
+      
+      col = (col + 1) % 2;
+    });
 
-    html2pdf().set(opt).from(pdfContent).save();
+    yPosition += 18;
+
+    // ===== ফলাফল বিভাগ =====
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('পরীক্ষার ফলাফল', margin, yPosition);
+    yPosition += 7;
+
+    const cStats = getStats(results.congruent);
+    const iStats = getStats(results.incongruent);
+
+    // ফেজ ১
+    pdf.setFillColor(240, 253, 250); // Light teal
+    pdf.rect(margin, yPosition - 3, colWidth - 2, 20, 'F');
+    
+    pdf.setFont(undefined, 'bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(16, 185, 129);
+    pdf.text('ফেজ ১: সাধারণ', margin + 3, yPosition);
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(`${cStats.avg}ms`, margin + 3, yPosition + 8);
+    
+    pdf.setFontSize(7);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text(`সঠিক: ${cStats.correct} | ভুল: ${cStats.incorrect}`, margin + 3, yPosition + 15);
+
+    // ফেজ ২
+    pdf.setFillColor(254, 242, 242); // Light red
+    pdf.rect(margin + colWidth, yPosition - 3, colWidth - 2, 20, 'F');
+    
+    pdf.setFont(undefined, 'bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(239, 68, 68);
+    pdf.text('ফেজ ২: চ্যালেঞ্জ', margin + colWidth + 3, yPosition);
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(`${iStats.avg}ms`, margin + colWidth + 3, yPosition + 8);
+    
+    pdf.setFontSize(7);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text(`সঠিক: ${iStats.correct} | ভুল: ${iStats.incorrect}`, margin + colWidth + 3, yPosition + 15);
+
+    yPosition += 25;
+
+    // স্ট্রুপ ইন্টারফারেন্স স্কোর
+    pdf.setFillColor(79, 70, 229);
+    pdf.rect(margin, yPosition - 3, contentWidth, 12, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont(undefined, 'bold');
+    pdf.setFontSize(9);
+    pdf.text('Stroop Interference Score', margin + 3, yPosition + 2);
+    
+    pdf.setFontSize(11);
+    pdf.text(`+${iStats.avg - cStats.avg} ms`, pageWidth - margin - 20, yPosition + 2);
+
+    yPosition += 18;
+
+    // ===== বিশ্লেষণ =====
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('বিশ্লেষণ', margin, yPosition);
+    yPosition += 6;
+
+    pdf.setFontSize(8);
+    pdf.setFont(undefined, 'normal');
+    const analysisText = getAnalysis();
+    const splitAnalysis = pdf.splitTextToSize(analysisText, contentWidth);
+    
+    pdf.setTextColor(55, 65, 81);
+    pdf.text(splitAnalysis, margin, yPosition);
+    yPosition += (splitAnalysis.length * 5) + 5;
+
+    // ===== মন্তব্য =====
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('ব্যবহারকারীর মন্তব্য', margin, yPosition);
+    yPosition += 6;
+
+    pdf.setFillColor(254, 243, 230);
+    pdf.rect(margin, yPosition - 3, contentWidth, pageHeight - yPosition - 15, 'F');
+
+    pdf.setFontSize(8);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const splitComment = pdf.splitTextToSize(comment, contentWidth - 4);
+    pdf.text(splitComment, margin + 2, yPosition + 2);
+
+    // ===== ফুটার =====
+    pdf.setFontSize(7);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Psychological Assessment Lab | Kazi Azimuddin College', pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+    // পিডিএফ সংরক্ষণ করুন
+    pdf.save(`Stroop_Test_Report_${new Date().toLocaleDateString()}.pdf`);
   };
 
   const AnimatedBg = () => (
@@ -690,7 +610,7 @@ const App = () => {
               
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
                 <div>
-                  <h5 className="font-bold text-slate-900 mb-2">গ��েষণার উদ্দেশ্য</h5>
+                  <h5 className="font-bold text-slate-900 mb-2">গবেষণার উদ্দেশ্য</h5>
                   <p className="text-xs text-slate-500 leading-relaxed">এই পরীক্ষার মাধ্যমে মানুষের 'অটোমেটিক প্রসেসিং' (শব্দ পড়া) এবং 'কন্ট্রোলড প্রসেসিং' (রং চেনা) এর মধ্যে যে সংঘর্ষ ঘটে, তার তীব্রতা পরিমাপ করা হয়। এটি মনোযোগ ও মানসিক জড়তা পরিমাপের একটি অন্যতম সেরা মাধ্যম।</p>
                 </div>
                 <div>
