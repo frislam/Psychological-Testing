@@ -99,13 +99,23 @@ const App = () => {
 
   const getStats = (data) => {
     const correctOnes = data.filter(d => d.isCorrect);
-    if (data.length === 0 || correctOnes.length === 0) return { avg: 0, correct: 0, incorrect: 0 };
+    const total = data.length;
+    const correct = correctOnes.length;
+    const incorrect = total - correct;
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
     
-    const sum = correctOnes.reduce((acc, curr) => acc + curr.responseTime, 0);
+    let avg = 0;
+    if (correctOnes.length > 0) {
+      const sum = correctOnes.reduce((acc, curr) => acc + curr.responseTime, 0);
+      avg = Math.round(sum / correctOnes.length);
+    }
+    
     return {
-      avg: Math.round(sum / correctOnes.length),
-      correct: correctOnes.length,
-      incorrect: data.length - correctOnes.length
+      avg,
+      correct,
+      incorrect,
+      accuracy,
+      total
     };
   };
 
@@ -125,12 +135,28 @@ const App = () => {
     const iStats = getStats(results.incongruent);
     const diff = iStats.avg - cStats.avg;
 
+    // Condition 0: Low accuracy
+    if (iStats.accuracy < 60) {
+      return "আপনার সঠিকতার হার (Accuracy) অনেক কম। এর মানে হলো আপনি অসামঞ্জস্যপূর্ণ তথ্যের চাপে বিভ্রান্ত হয়েছেন অথবা খুব তাড়াহুড়ো করে উত্তর দিয়েছেন। প্রকৃত কগনিটিভ কন্ট্রোল যাচাইয়ের জন্য আপনাকে মনোযোগ দিয়ে সঠিক উত্তর দিতে হবে।";
+    }
+
+    // Condition 1: Negative Stroop Effect
     if (diff < 0) {
       return "অসাধারণ! আপনার ক্ষেত্রে 'নেগেটিভ স্ট্রুপ ইফেক্ট' দেখা গেছে। অর্থাৎ চ্যালেঞ্জিং ধাপে আপনি আরও দ্রুত সিদ্ধান্ত নিয়েছেন। এটি আপনার উচ্চস্তরের অভিযোজন ক্ষমতা (Adaptability) এবং কঠিন পরিস্থিতিতে ব্রেনের দ্রুত সক্রিয় হওয়ার লক্ষণ।";
     }
-    if (diff > 500) return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন, যা নির্দেশ করে যে আপনার ব্রেন শব্দের অর্থ এবং রঙের মধ্যে পার্থক্য করতে লড়াই করেছে।";
-    if (diff > 200) return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। শব্দের অর্থ এবং কালির রঙের অমিল আপনার প্রসেসিং স্পিড কিছুটা কমিয়ে দিয়েছে।";
-    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী। অসামঞ্জস্যপূর্ণ তথ্যের মধ্যেও আপনি খুব দ্রুত সঠিক সিদ্ধান্ত নিতে সক্ষম হয়েছেন।";
+
+    // Condition 2: High Interference
+    if (diff > 500) {
+      return "আপনার মস্তিষ্কে 'কগনিটিভ ইন্টারফারেন্স' বেশ প্রকট। আপনি দ্বিতীয় ধাপে অনেক বেশি সময় নিয়েছেন, যা নির্দেশ করে যে আপনার ব্রেন শব্দের অর্থ এবং রঙের মধ্যে পার্থক্য করতে বেশ লড়াই করেছে।";
+    }
+
+    // Condition 3: Normal Stroop Effect
+    if (diff > 150) {
+      return "আপনার ফলাফল স্বাভাবিক স্ট্রুপ এফেক্ট নির্দেশ করছে। শব্দের অর্থ এবং কালির রঙের অমিল আপনার প্রসেসিং স্পিড কিছুটা কমিয়ে দিয়েছে, যা মানুষের সাধারণ বৈশিষ্ট্য।";
+    }
+
+    // Condition 4: Strong Cognitive Control
+    return "চমৎকার! আপনার কগনিটিভ কন্ট্রোল খুব শক্তিশালী। অসামঞ্জস্যপূর্ণ তথ্যের মধ্যেও আপনি উচ্চ সঠিকতা বজায় রেখে দ্রুত সিদ্ধান্ত নিতে সক্ষম হয়েছেন।";
   };
 
   const generatePDF = async () => {
@@ -213,7 +239,7 @@ const App = () => {
             <h3 style="font-size: 14px; font-weight: bold; color: #065f46; margin-bottom: 10px;">ফেজ ১: সাধারণ</h3>
             <div style="font-size: 32px; font-weight: bold; color: #065f46; margin-bottom: 10px;">${cStats.avg} <span style="font-size: 16px;">ms</span></div>
             <div style="display: flex; justify-content: space-between; font-size: 12px; color: #065f46;">
-              <span>সঠিক: ${cStats.correct}</span>
+              <span>সঠিক: ${cStats.correct}/${cStats.total}</span>
               <span>ভুল: ${cStats.incorrect}</span>
             </div>
           </div>
@@ -222,7 +248,7 @@ const App = () => {
             <h3 style="font-size: 14px; font-weight: bold; color: #92400e; margin-bottom: 10px;">ফেজ ২: চ্যালেঞ্জ</h3>
             <div style="font-size: 32px; font-weight: bold; color: #92400e; margin-bottom: 10px;">${iStats.avg} <span style="font-size: 16px;">ms</span></div>
             <div style="display: flex; justify-content: space-between; font-size: 12px; color: #92400e;">
-              <span>সঠিক: ${iStats.correct}</span>
+              <span>সঠিক: ${iStats.correct}/${iStats.total}</span>
               <span>ভুল: ${iStats.incorrect}</span>
             </div>
           </div>
@@ -608,7 +634,7 @@ const App = () => {
                   <span className="text-emerald-600 font-bold">ms</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold text-emerald-700 border-t border-emerald-100 pt-3">
-                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.congruent).correct}</div>
+                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.congruent).correct}/{trialsPerPhase}</div>
                   <div className="flex items-center gap-1">✗ ভুল: {getStats(results.congruent).incorrect}</div>
                 </div>
               </div>
@@ -623,7 +649,7 @@ const App = () => {
                   <span className="text-rose-600 font-bold">ms</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold text-rose-700 border-t border-rose-100 pt-3">
-                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.incongruent).correct}</div>
+                  <div className="flex items-center gap-1">✓ সঠিক: {getStats(results.incongruent).correct}/{trialsPerPhase}</div>
                   <div className="flex items-center gap-1">✗ ভুল: {getStats(results.incongruent).incorrect}</div>
                 </div>
               </div>
@@ -644,6 +670,17 @@ const App = () => {
                 </h4>
                 <div className="bg-slate-50 p-5 rounded-3xl text-slate-700 leading-relaxed italic border-l-4 border-indigo-400">
                   {getAnalysis()}
+                </div>
+              </section>
+              
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+                <div>
+                  <h5 className="font-bold text-slate-900 mb-2">গবেষণার উদ্দেশ্য</h5>
+                  <p className="text-xs text-slate-500 leading-relaxed">এই পরীক্ষার মাধ্যমে মানুষের 'অটোমেটিক প্রসেসিং' (শব্দ পড়া) এবং 'কন্ট্রোলড প্রসেসিং' (রং চেনা) এর মধ্যে যে সংঘর্ষ ঘটে, তার তীব্রতা পরিমাপ করা হয়। এটি মনোযোগ ও মানসিক জড়তা পরিমাপের একটি অন্যতম সেরা মাধ্যম।</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-slate-900 mb-2">কেন সময়ের পার্থক্য হয়?</h5>
+                  <p className="text-xs text-slate-500 leading-relaxed">মানুষ শৈশব থেকে শব্দ পড়তে অভ্যস্ত। তাই শব্দ দেখা মাত্রই ব্রেন তা পড়ে ফেলে। কিন্তু যখন শব্দের অর্থের বিপরীতে অন্য রং বলা হয়, তখন মস্তিষ্ককে স্বয়ংক্রিয়া কাজ থামিয়ে নতুন করে চিন্তা করতে হয়, যা সময় বৃদ্ধি করে।</p>
                 </div>
               </section>
             </div>
