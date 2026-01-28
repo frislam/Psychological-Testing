@@ -31,8 +31,8 @@
 
 ```bash
 # প্রজেক্ট ক্লোন করুন
-git clone https://github.com/frislam/stroop-test-expert.git
-cd stroop-test-expert
+git clone https://github.com/frislam/Psychological-Testing.git
+cd psychological-testing
 
 # ডিপেন্ডেন্সি ইনস্টল করুন
 npm install
