@@ -378,7 +378,7 @@ const App = () => {
               <div className="grid grid-cols-2 gap-4 text-sm border-t border-slate-200 pt-4 mt-2">
                 <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                   <p className="text-slate-400 text-[10px] uppercase font-bold mb-1">Session</p>
-                  <p className="font-semibold text-slate-700">Psychology 25-26</p>
+                  <p className="font-semibold text-slate-700">Psychology 22-23</p>
                 </div>
                 <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                   <p className="text-slate-400 text-[10px] uppercase font-bold mb-1">Institution</p>
