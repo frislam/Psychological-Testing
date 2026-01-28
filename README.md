@@ -30,15 +30,11 @@
 ## ইনস্টলেশন
 
 ```bash
-# প্রজেক্ট ক্লোন করুন
 git clone https://github.com/frislam/Psychological-Testing.git
 cd psychological-testing
 
-# ডিপেন্ডেন্সি ইনস্টল করুন
 npm install
 
-# ডেভেলপমেন্ট সার্ভার চালান
 npm start
 
-# প্রোডাকশনের জন্য বিল্ড করুন
 npm run build
